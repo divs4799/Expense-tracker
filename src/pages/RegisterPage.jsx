@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { registerUser, setSession } from "../storage/storage";
+import { registerUser } from "../storage/storage";
+import { UserPlus, Wallet, AlertCircle } from "lucide-react";
 
 export function RegisterPage({ onRegister, onGoLogin }) {
   const [name, setName]         = useState("");
@@ -24,10 +25,9 @@ export function RegisterPage({ onRegister, onGoLogin }) {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const result = registerUser(name, email);
+    setTimeout(async () => {
+      const result = await registerUser(name, email, password);
       if (result.ok) {
-        setSession(result.user);
         onRegister(result.user);
       } else {
         setError(result.error);
@@ -48,9 +48,11 @@ export function RegisterPage({ onRegister, onGoLogin }) {
         <div className="absolute right-4 bottom-0 w-24 h-24 rounded-full bg-white/[.07] pointer-events-none" />
 
         <div className="relative text-center text-white">
-          <div className="text-5xl mb-3">🏦</div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Create Account</h1>
-          <p className="text-white/70 text-sm mt-2">Start managing your family budget today.</p>
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/30 shadow-lg">
+            <UserPlus size={32} className="text-white" />
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Join Us</h1>
+          <p className="text-white/70 text-sm mt-1">Start tracking with your family today.</p>
         </div>
       </div>
 
@@ -60,8 +62,9 @@ export function RegisterPage({ onRegister, onGoLogin }) {
         <p className="text-base-content/50 text-sm mb-6">Create your free account</p>
 
         {error && (
-          <div role="alert" className="alert alert-error mb-4 py-3 text-sm">
-            <span>⚠️ {error}</span>
+          <div role="alert" className="alert alert-error mb-4 py-3 text-sm flex items-center gap-2">
+            <AlertCircle size={18} />
+            <span>{error}</span>
           </div>
         )}
 

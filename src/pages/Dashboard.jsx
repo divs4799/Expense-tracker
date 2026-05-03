@@ -1,5 +1,18 @@
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { monthKey, fmtCur } from "../utils/helpers";
+import { 
+  FolderRoot, 
+  ReceiptText, 
+  Calendar, 
+  Hourglass, 
+  Pencil, 
+  AlertTriangle,
+  Lightbulb,
+  AlertCircle,
+  ArrowRight,
+  Wallet,
+  Plus
+} from "lucide-react";
 
 export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }) {
   const mk             = monthKey();
@@ -18,10 +31,10 @@ export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }
   });
 
   const quickStats = [
-    { label: "Categories", val: cats.length,                                                                                       icon: "📁", cls: "text-primary"   },
-    { label: "Expenses",   val: monthExp.length,                                                                                   icon: "📝", cls: "text-secondary" },
-    { label: "Avg / Day",  val: fmtCur(Math.round(totalSpent / Math.max(1, new Date().getDate()))),                               icon: "📅", cls: "text-warning"   },
-    { label: "Days Left",  val: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate(), icon: "⏳", cls: "text-accent"    },
+    { label: "Categories", val: cats.length,                                                                                       icon: <FolderRoot className="text-primary" size={24} />,   cls: "text-primary"   },
+    { label: "Expenses",   val: monthExp.length,                                                                                   icon: <ReceiptText className="text-secondary" size={24} />, cls: "text-secondary" },
+    { label: "Avg / Day",  val: fmtCur(Math.round(totalSpent / Math.max(1, new Date().getDate()))),                               icon: <Calendar className="text-warning" size={24} />,    cls: "text-warning"   },
+    { label: "Days Left",  val: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate(), icon: <Hourglass className="text-accent" size={24} />,   cls: "text-accent"    },
   ];
 
   return (
@@ -42,38 +55,57 @@ export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }
           </span>
           <button
             onClick={onSetBudget}
-            className="btn btn-xs btn-ghost border border-white/40 text-white hover:bg-white/20 backdrop-blur-sm"
+            className="btn btn-xs btn-ghost border border-white/40 text-white hover:bg-white/20 backdrop-blur-sm gap-1"
           >
-            ✏️ Set Budget
+            <Pencil size={12} /> Set Budget
           </button>
         </div>
 
-        <div className="text-4xl font-extrabold tracking-tight mb-1">{fmtCur(totalRemaining)}</div>
-        <div className="text-sm text-white/70 mb-4">
-          remaining of <strong className="text-white">{fmtCur(overallBudget)}</strong>
-          {monthlyBudget > 0 && <span className="opacity-60"> (monthly budget)</span>}
-        </div>
+        {overallBudget > 0 ? (
+          <>
+            <div className="text-4xl font-extrabold tracking-tight mb-1">{fmtCur(totalRemaining)}</div>
+            <div className="text-sm text-white/70 mb-4">
+              remaining of <strong className="text-white">{fmtCur(overallBudget)}</strong>
+              {monthlyBudget > 0 && <span className="opacity-60"> (monthly budget)</span>}
+            </div>
 
-        {/* hero progress */}
-        <div className="w-full bg-white/25 rounded-full h-1.5 overflow-hidden mb-2">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${Math.min(overallPct, 100)}%`,
-              background: overallPct >= 100 ? "#ff6b6b" : overallPct >= 80 ? "#ffd166" : "rgba(255,255,255,.9)",
-            }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-white/60">
-          <span>Spent: {fmtCur(totalSpent)}</span>
-          <span>{Math.round(overallPct)}% used</span>
-        </div>
+            {/* hero progress */}
+            <div className="w-full bg-white/25 rounded-full h-1.5 overflow-hidden mb-2">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(overallPct, 100)}%`,
+                  background: overallPct >= 100 ? "#ff6b6b" : overallPct >= 80 ? "#ffd166" : "rgba(255,255,255,.9)",
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-white/60">
+              <span>Spent: {fmtCur(totalSpent)}</span>
+              <span>{Math.round(overallPct)}% used</span>
+            </div>
+          </>
+        ) : (
+          <div className="py-2">
+            <div className="text-2xl font-black mb-2 flex items-center gap-2">
+              <Wallet size={28} /> Ready to Save?
+            </div>
+            <p className="text-sm text-white/80 mb-4 leading-relaxed">
+              Set a monthly budget or allocate budgets to your categories to start tracking your financial health.
+            </p>
+            <button 
+              onClick={onSetBudget}
+              className="btn btn-sm bg-white text-primary border-none hover:bg-white/90 shadow-lg gap-2"
+            >
+              <Plus size={16} /> Set Your First Budget
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Unallocated notice ── */}
       {monthlyBudget > 0 && unallocated !== 0 && (
         <div role="alert" className={`alert ${unallocated < 0 ? "alert-error" : "alert-info"} mb-3 py-3`}>
-          <span>{unallocated < 0 ? "⚠️" : "💡"}</span>
+          <span>{unallocated < 0 ? <AlertTriangle size={20} /> : <Lightbulb size={20} />}</span>
           <div>
             <div className="font-bold text-sm">
               {unallocated < 0 ? "Category budgets exceed monthly budget!" : `${fmtCur(unallocated)} unallocated`}
@@ -90,7 +122,7 @@ export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }
       {/* ── Over-budget alert ── */}
       {overBudgetCats.length > 0 && (
         <div role="alert" className="alert alert-error mb-3 py-3">
-          <span>🚨</span>
+          <AlertCircle size={20} />
           <span className="font-bold text-sm">
             Over budget: {overBudgetCats.map((c) => c.name).join(", ")}
           </span>
@@ -113,8 +145,8 @@ export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }
       {/* ── Category list ── */}
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-base font-bold">Categories</h2>
-        <button onClick={() => onNav("categories")} className="btn btn-ghost btn-xs text-primary">
-          Manage →
+        <button onClick={() => onNav("categories")} className="btn btn-ghost btn-xs text-primary flex items-center gap-1">
+          Manage <ArrowRight size={14} />
         </button>
       </div>
 

@@ -1,7 +1,8 @@
 import { ThemeSwitch } from "../ui/ThemeSwitch";
+import { LogOut, Plus } from "lucide-react";
 
 export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, user, onLogout }) {
-  const current  = tabs.find((t) => t.id === tab);
+  const current = tabs.find((t) => t.id === tab);
   const initials = (user?.name || user?.email || "?")
     .split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
@@ -10,9 +11,9 @@ export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, user, onL
       {/* Left — app name + current page */}
       <div className="navbar-start flex-col items-start gap-0">
         <span className="text-[10px] font-bold uppercase tracking-widest text-base-content/40 leading-none">
-          Family Budget
+          Budget Tracker
         </span>
-        <span className="text-[18px] font-extrabold leading-tight">
+        <span className="text-[18px] font-extrabold leading-tight flex items-center gap-2">
           {current?.icon} {current?.label}
         </span>
       </div>
@@ -23,8 +24,8 @@ export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, user, onL
 
         {/* Hide add-expense button on the profile page */}
         {tab !== "profile" && (
-          <button onClick={onAddExpense} className="btn btn-primary btn-sm shadow-md">
-            + Expense
+          <button onClick={onAddExpense} className="btn btn-primary btn-sm shadow-md gap-1">
+            <Plus size={16} /> Expense
           </button>
         )}
 
@@ -48,8 +49,8 @@ export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, user, onL
                 {user.email}
               </li>
               <li>
-                <button onClick={onLogout} className="text-error font-semibold">
-                  🚪 Sign Out
+                <button onClick={onLogout} className="text-error font-semibold flex items-center gap-2">
+                  <LogOut size={16} /> Sign Out
                 </button>
               </li>
             </ul>

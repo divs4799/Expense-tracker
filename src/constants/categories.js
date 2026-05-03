@@ -4,9 +4,9 @@ export const CAT_COLORS = [
 ];
 
 export const DEFAULT_CATEGORIES = [
-  { id: "1", name: "Groceries", icon: "🛒", budget: 8000,  color: CAT_COLORS[0] },
-  { id: "2", name: "Rent",      icon: "🏠", budget: 20000, color: CAT_COLORS[1] },
-  { id: "3", name: "Petrol",    icon: "⛽", budget: 4000,  color: CAT_COLORS[2] },
-  { id: "4", name: "OTTs",      icon: "📺", budget: 1500,  color: CAT_COLORS[3] },
-  { id: "5", name: "Medicines", icon: "💊", budget: 2000,  color: CAT_COLORS[4] },
+  { id: "1", name: "Groceries", icon: "🛒", budget: 0, color: CAT_COLORS[0] },
+  { id: "2", name: "Rent",      icon: "🏠", budget: 0, color: CAT_COLORS[1] },
+  { id: "3", name: "Petrol",    icon: "⛽", budget: 0, color: CAT_COLORS[2] },
+  { id: "4", name: "OTTs",      icon: "📺", budget: 0, color: CAT_COLORS[3] },
+  { id: "5", name: "Medicines", icon: "💊", budget: 0, color: CAT_COLORS[4] },
 ];

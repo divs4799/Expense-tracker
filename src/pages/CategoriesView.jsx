@@ -4,6 +4,7 @@ import { Input } from "../components/ui/Input";
 import { Btn }   from "../components/ui/Btn";
 import { CAT_COLORS } from "../constants/categories";
 import { monthKey, fmtCur, uid } from "../utils/helpers";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export function CategoriesView({ cats, expenses, onCatsChange }) {
   const mk       = monthKey();
@@ -36,7 +37,9 @@ export function CategoriesView({ cats, expenses, onCatsChange }) {
     <div className="px-4 pb-28">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">Categories</h2>
-        <button onClick={openAdd} className="btn btn-primary btn-sm">+ Add</button>
+        <button onClick={openAdd} className="btn btn-primary btn-sm gap-1">
+          <Plus size={16} /> Add
+        </button>
       </div>
 
       {cats.map((cat) => {
@@ -59,11 +62,15 @@ export function CategoriesView({ cats, expenses, onCatsChange }) {
                 <button
                   onClick={() => openEdit(cat)}
                   className="btn btn-ghost btn-xs btn-square"
-                >✏️</button>
+                >
+                  <Pencil size={14} />
+                </button>
                 <button
                   onClick={() => del(cat.id)}
                   className="btn btn-error btn-xs btn-square btn-outline"
-                >🗑</button>
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           </div>

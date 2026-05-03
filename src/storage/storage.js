@@ -1,141 +1,168 @@
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  updateProfile, 
+  updateEmail, 
+  updatePassword 
+} from "firebase/auth";
+import { 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  collection, 
+  query, 
+  where, 
+  onSnapshot,
+  addDoc,
+  serverTimestamp
+} from "firebase/firestore";
+import { auth, db } from "./firebase";
 import { DEFAULT_CATEGORIES, CAT_COLORS } from "../constants/categories";
 
+// ── Keys ────────────────────────────────────────────────────────────────────
 export const KEYS = {
-  theme:   "fam_theme",
-  session: "fam_session",
-  users:   "fam_users",
+  theme: "fam_theme",
 };
 
-const DEMO_PASSWORD = "12345";
+// ── Auth & Session ──────────────────────────────────────────────────────────
 
-// ── Namespaced data keys (one set per family OR "personal") ───────────────────
-export function getDataKeys(namespace) {
-  const ns = namespace || "personal";
-  return {
-    cats:           `fam_cats_${ns}`,
-    expenses:       `fam_expenses_${ns}`,
-    monthlyBudgets: `fam_budgets_${ns}`,
-  };
-}
-
-export function loadData(namespace) {
-  const keys = getDataKeys(namespace);
-  try {
-    return {
-      cats:           JSON.parse(localStorage.getItem(keys.cats))           || DEFAULT_CATEGORIES,
-      expenses:       JSON.parse(localStorage.getItem(keys.expenses))       || {},
-      monthlyBudgets: JSON.parse(localStorage.getItem(keys.monthlyBudgets)) || {},
-    };
-  } catch {
-    return { cats: DEFAULT_CATEGORIES, expenses: {}, monthlyBudgets: {} };
-  }
-}
-
-export function saveData(namespace, cats, expenses, monthlyBudgets) {
-  const keys = getDataKeys(namespace);
-  localStorage.setItem(keys.cats,           JSON.stringify(cats));
-  localStorage.setItem(keys.expenses,       JSON.stringify(expenses));
-  localStorage.setItem(keys.monthlyBudgets, JSON.stringify(monthlyBudgets));
-}
-
-// ── Session ───────────────────────────────────────────────────────────────────
+/** Get current user session from Firebase Auth */
 export function getSession() {
-  try { return JSON.parse(localStorage.getItem(KEYS.session)) || null; }
-  catch { return null; }
-}
-export function setSession(user) {
-  localStorage.setItem(KEYS.session, JSON.stringify(user));
-}
-export function clearSession() {
-  localStorage.removeItem(KEYS.session);
+  return auth.currentUser;
 }
 
-// ── Internal user helpers ─────────────────────────────────────────────────────
-export function getUsers() {
-  try { return JSON.parse(localStorage.getItem(KEYS.users)) || []; }
-  catch { return []; }
-}
-function saveUsers(users) {
-  localStorage.setItem(KEYS.users, JSON.stringify(users));
-}
-function patchUser(email, updates) {
-  saveUsers(getUsers().map((u) => u.email === email ? { ...u, ...updates } : u));
-}
-
-// Strip sensitive fields for session
-function toSession(u) {
-  return {
-    name:           u.name,
-    email:          u.email,
-    avatar:         u.avatar         ?? null,
-    avatarColor:    u.avatarColor    ?? CAT_COLORS[0],
-    familyIds:      u.familyIds      ?? [],
-    activeFamilyId: u.activeFamilyId ?? null,
-  };
-}
-
-// ── Auth ──────────────────────────────────────────────────────────────────────
-export function registerUser(name, email, password) {
-  const users = getUsers();
-  if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-    return { ok: false, error: "An account with this email already exists." };
+export async function loginUser(email, password) {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    // Fetch profile from Firestore, but don't crash if it fails
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        return { ok: true, user: { ...user, ...userDoc.data() } };
+      }
+    } catch (e) {
+      console.warn("Profile fetch failed, using basic auth info:", e);
+    }
+    
+    return { ok: true, user };
+  } catch (error) {
+    return { ok: false, error: error.message };
   }
-  const avatarColor = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)];
-  const rec = { name, email: email.toLowerCase(), password, avatar: null, avatarColor, familyIds: [], activeFamilyId: null };
-  saveUsers([...users, rec]);
-  const user = toSession(rec);
-  setSession(user);
-  return { ok: true, user };
 }
 
-export function loginUser(email, password) {
-  const users = getUsers();
-  const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  const expected = found?.password ?? DEMO_PASSWORD;
-  if (password !== expected) return { ok: false, error: "Incorrect password." };
-  const user = found ? toSession(found) : { name: email.split("@")[0], email: email.toLowerCase(), avatar: null, avatarColor: CAT_COLORS[0], familyIds: [], activeFamilyId: null };
-  setSession(user);
-  return { ok: true, user };
+export async function registerUser(name, email, password) {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const avatarColor = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)];
+    
+    const profile = {
+      uid: user.uid,
+      name,
+      email: email.toLowerCase(),
+      avatar: null,
+      avatarColor,
+      familyIds: [],
+      activeFamilyId: null,
+      createdAt: serverTimestamp()
+    };
+
+    // Save profile to Firestore
+    await setDoc(doc(db, "users", user.uid), profile);
+    await updateProfile(user, { displayName: name });
+    
+    return { ok: true, user: { ...user, ...profile } };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
 }
 
-export function updateUserName(user, newName) {
-  patchUser(user.email, { name: newName });
-  const updated = { ...user, name: newName };
-  setSession(updated);
-  return updated;
+export async function clearSession() {
+  await signOut(auth);
 }
 
-export function updateUserAvatar(user, avatar, avatarColor) {
-  patchUser(user.email, { avatar, avatarColor });
-  const updated = { ...user, avatar, avatarColor };
-  setSession(updated);
-  return updated;
+// ── User Management ─────────────────────────────────────────────────────────
+
+export async function updateUserName(user, newName) {
+  await updateDoc(doc(db, "users", user.uid), { name: newName });
+  await updateProfile(auth.currentUser, { displayName: newName });
+  return { ...user, name: newName };
 }
 
-export function updateUserEmail(user, newEmail, password) {
-  const users   = getUsers();
-  const current = users.find((u) => u.email === user.email);
-  if ((current?.password ?? DEMO_PASSWORD) !== password) return { ok: false, error: "Incorrect password." };
-  if (users.find((u) => u.email === newEmail.toLowerCase() && u.email !== user.email)) return { ok: false, error: "Email already in use." };
-  patchUser(user.email, { email: newEmail.toLowerCase() });
-  const updated = { ...user, email: newEmail.toLowerCase() };
-  setSession(updated);
-  return { ok: true, user: updated };
+export async function updateUserAvatar(user, avatar, avatarColor) {
+  await updateDoc(doc(db, "users", user.uid), { avatar, avatarColor });
+  return { ...user, avatar, avatarColor };
 }
 
-export function changePassword(user, oldPwd, newPwd) {
-  const users   = getUsers();
-  const current = users.find((u) => u.email === user.email);
-  if ((current?.password ?? DEMO_PASSWORD) !== oldPwd) return { ok: false, error: "Current password is incorrect." };
-  if (newPwd.length < 3) return { ok: false, error: "New password must be at least 3 characters." };
-  patchUser(user.email, { password: newPwd });
-  return { ok: true };
+export async function updateUserEmail(user, newEmail, password) {
+  try {
+    // Note: re-authentication might be required by Firebase for sensitive changes
+    await updateEmail(auth.currentUser, newEmail);
+    await updateDoc(doc(db, "users", user.uid), { email: newEmail });
+    return { ok: true, user: { ...user, email: newEmail } };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
 }
 
-/** Called by families.js when familyIds/activeFamilyId change */
-export function patchSession(user, updates) {
-  const updated = { ...user, ...updates };
-  setSession(updated);
-  patchUser(user.email, updates);
-  return updated;
+export async function changePassword(user, oldPwd, newPwd) {
+  try {
+    await updatePassword(auth.currentUser, newPwd);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+/** Helper to patch the user state in Firestore and local state */
+export async function patchSession(user, updates) {
+  await updateDoc(doc(db, "users", user.uid), updates);
+  return { ...user, ...updates };
+}
+
+// ── Data Persistence ────────────────────────────────────────────────────────
+
+/** 
+ * Real-time listener for data. 
+ * Since Firestore is real-time, we use onSnapshot instead of a one-time loadData.
+ */
+export function subscribeToData(namespace, callback) {
+  const ns = namespace || "personal";
+  const userUid = auth.currentUser?.uid;
+  
+  if (!userUid) return () => {};
+
+  // We'll store data in a 'data' collection partitioned by namespace
+  const dataDocRef = doc(db, "data", ns === "personal" ? userUid : ns);
+
+  return onSnapshot(dataDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data());
+    } else {
+      // Default data if none exists yet
+      callback({
+        cats: DEFAULT_CATEGORIES,
+        expenses: {},
+        monthlyBudgets: {}
+      });
+    }
+  });
+}
+
+export async function saveData(namespace, cats, expenses, monthlyBudgets) {
+  const ns = namespace || "personal";
+  const userUid = auth.currentUser?.uid;
+  if (!userUid) return;
+
+  const dataDocRef = doc(db, "data", ns === "personal" ? userUid : ns);
+  await setDoc(dataDocRef, {
+    cats,
+    expenses,
+    monthlyBudgets,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 }

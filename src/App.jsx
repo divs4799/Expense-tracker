@@ -1,6 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
-import { KEYS, loadData, saveData, getSession, clearSession } from "./storage/storage";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./storage/firebase";
+import { 
+  KEYS, 
+  saveData, 
+  clearSession, 
+  subscribeToData 
+} from "./storage/storage";
 import { monthKey } from "./utils/helpers";
+import { DEFAULT_CATEGORIES } from "./constants/categories";
 
 import { ProtectedRoute }  from "./components/auth/ProtectedRoute";
 import { Header }          from "./components/layout/Header";
@@ -16,35 +24,68 @@ import { ChartsView }     from "./pages/ChartsView";
 import { CategoriesView } from "./pages/CategoriesView";
 import { ProfilePage }    from "./pages/ProfilePage";
 
+import { 
+  Home, 
+  ReceiptText, 
+  PieChart, 
+  Layers, 
+  UserCircle 
+} from "lucide-react";
+import { Toaster, toast } from "react-hot-toast";
+
 const TABS = [
-  { id: "home",       icon: "🏠", label: "Home"       },
-  { id: "expenses",   icon: "📝", label: "Expenses"   },
-  { id: "charts",     icon: "📊", label: "Charts"     },
-  { id: "categories", icon: "🗂",  label: "Categories" },
-  { id: "profile",    icon: "👤", label: "Profile"    },
+  { id: "home",       icon: <Home size={20} />,        label: "Home"       },
+  { id: "expenses",   icon: <ReceiptText size={20} />, label: "Expenses"   },
+  { id: "charts",     icon: <PieChart size={20} />,    label: "Charts"     },
+  { id: "categories", icon: <Layers size={20} />,      label: "Categories" },
+  { id: "profile",    icon: <UserCircle size={20} />,  label: "Profile"    },
 ];
 
 const FONT = { fontFamily: "'DM Sans', system-ui, sans-serif" };
 
 export default function App() {
   const [dark, setDark]   = useState(() => localStorage.getItem(KEYS.theme) !== "light");
-  const [user, setUser]   = useState(() => getSession());
+  const [user, setUser]   = useState(null);
+  const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState("login");
 
-  // Namespace is either the active family ID or 'personal'
-  const ns = user?.activeFamilyId || "personal";
+  const [data, setData] = useState({
+    cats: DEFAULT_CATEGORIES,
+    expenses: {},
+    monthlyBudgets: {}
+  });
   
-  const [data, setData]                   = useState(() => loadData(ns));
   const [tab,  setTab]                    = useState("home");
   const [addExpOpen,    setAddExpOpen]    = useState(false);
   const [setBudgetOpen, setSetBudgetOpen] = useState(false);
 
-  // Sync data when namespace (active family) changes
+  // Namespace for data syncing
+  const ns = user?.activeFamilyId || "personal";
+
+  // 1. Listen for Auth changes
   useEffect(() => {
-    if (user) {
-      setData(loadData(user.activeFamilyId || "personal"));
-    }
-  }, [user?.activeFamilyId]);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // We have a user, we'll let the Login/Register handlers 
+        // provide the initial profile data, or we could fetch it here.
+        // For simplicity, we'll keep the profile in the user state.
+        setUser(prev => prev || firebaseUser);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Listen for Data changes (Real-time Sync)
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToData(ns, (newData) => {
+      setData(newData);
+    });
+    return () => unsubscribe();
+  }, [user, ns]);
 
   // ── Theme ──────────────────────────────────────────────────────────────────
   const toggleTheme = () => setDark((d) => {
@@ -59,8 +100,8 @@ export default function App() {
     setTab("home");
   };
 
-  const handleLogout = () => {
-    clearSession();
+  const handleLogout = async () => {
+    await clearSession();
     setUser(null);
     setTab("home");
     setAddExpOpen(false);
@@ -72,33 +113,35 @@ export default function App() {
     setUser(updatedUser);
   };
 
-  // ── Data mutators ──────────────────────────────────────────────────────────
-  const setCats = useCallback((newCats) => {
-    setData((d) => { 
-      saveData(ns, newCats, d.expenses, d.monthlyBudgets); 
-      return { ...d, cats: newCats }; 
-    });
-  }, [ns]);
+  // ── Data mutators (Now Async) ──────────────────────────────────────────────
+  const setCats = useCallback(async (newCats) => {
+    await saveData(ns, newCats, data.expenses, data.monthlyBudgets);
+    toast.success("Categories updated!");
+  }, [ns, data.expenses, data.monthlyBudgets]);
 
-  const addExpense = useCallback((exp) => {
-    setData((d) => {
-      const mk          = monthKey(new Date(exp.date));
-      const newExpenses = { ...d.expenses, [mk]: [...(d.expenses[mk] || []), exp] };
-      saveData(ns, d.cats, newExpenses, d.monthlyBudgets);
-      return { ...d, expenses: newExpenses };
-    });
-  }, [ns]);
+  const addExpense = useCallback(async (exp) => {
+    const mk          = monthKey(new Date(exp.date));
+    const newExpenses = { ...data.expenses, [mk]: [...(data.expenses[mk] || []), exp] };
+    await saveData(ns, data.cats, newExpenses, data.monthlyBudgets);
+    toast.success("Expense added!");
+  }, [ns, data.cats, data.expenses, data.monthlyBudgets]);
 
-  const saveMonthlyBudget = useCallback((amount) => {
-    setData((d) => {
-      const mk    = monthKey();
-      const newMB = { ...d.monthlyBudgets, [mk]: amount };
-      saveData(ns, d.cats, d.expenses, newMB);
-      return { ...d, monthlyBudgets: newMB };
-    });
-  }, [ns]);
+  const saveMonthlyBudget = useCallback(async (amount) => {
+    const mk    = monthKey();
+    const newMB = { ...data.monthlyBudgets, [mk]: amount };
+    await saveData(ns, data.cats, data.expenses, newMB);
+    toast.success("Monthly budget updated!");
+  }, [ns, data.cats, data.expenses, data.monthlyBudgets]);
 
-  // ── Auth screens (public) ──────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-100">
+        <span className="loading loading-ring loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
+  // ── Auth screens ──────────────────────────────────────────────────────────
   const authScreens = (
     <div data-theme={dark ? "dark" : "light"} style={FONT}>
       {screen === "login"
@@ -149,6 +192,19 @@ export default function App() {
   return (
     <ProtectedRoute fallback={authScreens}>
       {appShell}
+      <Toaster 
+        position="top-center" 
+        toastOptions={{
+          className: 'font-bold text-sm',
+          style: {
+            background: '#1a1d27',
+            color: '#e2e8f0',
+            border: '1px solid #2e3250',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          },
+        }}
+      />
     </ProtectedRoute>
   );
 }

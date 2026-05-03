@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { monthKey, fmtCur } from "../utils/helpers";
+import { Plus, Search, Inbox, Wallet } from "lucide-react";
 
 export function ExpensesView({ cats, expenses, onAdd }) {
   const mk       = monthKey();
@@ -11,16 +12,18 @@ export function ExpensesView({ cats, expenses, onAdd }) {
     <div className="px-4 pb-28">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">Expenses</h2>
-        <button onClick={onAdd} className="btn btn-primary btn-sm">+ Add</button>
+        <button onClick={onAdd} className="btn btn-primary btn-sm gap-1">
+          <Plus size={16} /> Add
+        </button>
       </div>
 
       {/* Category filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
-        {[{ id: "all", name: "All", icon: "🔍", color: "var(--color-primary)" }, ...cats].map((c) => (
+        {[{ id: "all", name: "All", icon: <Search size={12} />, color: "var(--color-primary)" }, ...cats].map((c) => (
           <button
             key={c.id}
             onClick={() => setFilter(c.id)}
-            className="btn btn-xs rounded-full flex-shrink-0 border transition-all duration-200"
+            className="btn btn-xs rounded-full flex-shrink-0 border transition-all duration-200 gap-1.5"
             style={{
               background:  filter === c.id ? (c.color || "var(--color-primary)") : "transparent",
               color:       filter === c.id ? "#fff" : undefined,
@@ -33,9 +36,10 @@ export function ExpensesView({ cats, expenses, onAdd }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-base-content/50">
-          <div className="text-5xl mb-3">📭</div>
-          <div>No expenses yet</div>
+        <div className="text-center py-20 bg-base-200/50 rounded-3xl border-2 border-dashed border-base-300">
+          <div className="flex justify-center mb-4 text-base-content/20"><Inbox size={48} /></div>
+          <div className="font-bold text-base-content/40">No expenses yet</div>
+          <div className="text-xs text-base-content/30 mt-1">Tap the plus button to add one</div>
         </div>
       ) : (
         filtered.map((exp) => {
@@ -48,9 +52,12 @@ export function ExpensesView({ cats, expenses, onAdd }) {
               <div className="card-body p-4 flex-row items-center gap-3">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ background: (cat?.color || "var(--color-primary)") + "22" }}
+                  style={{ 
+                    background: (cat?.color || "var(--color-primary)") + "22",
+                    color: cat?.color || "var(--color-primary)"
+                  }}
                 >
-                  {cat?.icon || "💰"}
+                  {cat?.icon || <Wallet size={20} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm">{exp.note || cat?.name || "Expense"}</div>

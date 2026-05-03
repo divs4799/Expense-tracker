@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { loginUser, setSession } from "../storage/storage";
+import { loginUser } from "../storage/storage";
+import { Wallet, AlertCircle } from "lucide-react";
 
 export function LoginPage({ onLogin, onGoRegister }) {
   const [email, setEmail] = useState("");
@@ -13,10 +14,9 @@ export function LoginPage({ onLogin, onGoRegister }) {
     if (!email || !password) { setError("Please fill in all fields."); return; }
 
     setLoading(true);
-    setTimeout(() => {               // tiny delay for UX feel
-      const result = loginUser(email, password);
+    setTimeout(async () => {               // tiny delay for UX feel
+      const result = await loginUser(email, password);
       if (result.ok) {
-        setSession(result.user);
         onLogin(result.user);
       } else {
         setError(result.error);
@@ -37,20 +37,23 @@ export function LoginPage({ onLogin, onGoRegister }) {
         <div className="absolute -left-6 bottom-0 w-28 h-28 rounded-full bg-white/[.07] pointer-events-none" />
 
         <div className="relative text-center text-white">
-          <div className="text-5xl mb-3">💰</div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Expense tracker</h1>
+          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-white/30 shadow-xl">
+            <Wallet size={40} className="text-white" />
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Expense Tracker</h1>
           <p className="text-white/70 text-sm mt-2">Track expenses together, stay on budget.</p>
         </div>
       </div>
 
       {/* Form card */}
-      <div className="flex-1 bg-base-100 rounded-t-3xl -mt-6 px-6 pt-8 pb-10">
-        <h2 className="text-xl font-bold mb-1">Welcome back 👋</h2>
+      <div className="flex-1 bg-base-100 rounded-t-3xl -mt-6 px-6 pt-8 pb-10 shadow-2xl relative z-10">
+        <h2 className="text-xl font-bold mb-1">Welcome back</h2>
         <p className="text-base-content/50 text-sm mb-6">Sign in to your account</p>
 
         {error && (
-          <div role="alert" className="alert alert-error mb-4 py-3 text-sm">
-            <span>⚠️ {error}</span>
+          <div role="alert" className="alert alert-error mb-4 py-3 text-sm flex items-center gap-2">
+            <AlertCircle size={18} />
+            <span>{error}</span>
           </div>
         )}
 
