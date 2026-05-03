@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@plugin "daisyui/index.js" {
+  themes: light --default, dark --prefersdark;
+}
+
+/* Brand color overrides — applied in both themes */
+:root,
+[data-theme="light"],
+[data-theme="dark"] {
+  --color-primary:          oklch(55% 0.264 270);
+  --color-primary-content:  oklch(98%  0.01  270);
+  --color-secondary:        oklch(67% 0.163 192);
+  --color-secondary-content:oklch(98%  0.01  192);
+  --color-accent:           oklch(65% 0.267 330);
+  --color-accent-content:   oklch(98%  0.01  330);
+}
+
+body { margin: 0; }
+
+#root { min-height: 100svh; }

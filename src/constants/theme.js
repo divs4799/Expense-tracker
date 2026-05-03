@@ -1,0 +1,33 @@
+export const DARK = {
+  bg:      "#0f1117",
+  surface: "#1a1d27",
+  card:    "#20243a",
+  border:  "#2e3250",
+  accent:  "#6c63ff",
+  green:   "#22c55e",
+  red:     "#ef4444",
+  yellow:  "#f59e0b",
+  text:    "#e2e8f0",
+  muted:   "#94a3b8",
+  teal:    "#14b8a6",
+  pink:    "#ec4899",
+  inputBg: "#20243a",
+  shadow:  "rgba(0,0,0,.45)",
+};
+
+export const LIGHT = {
+  bg:      "#f0f2f9",
+  surface: "#ffffff",
+  card:    "#ffffff",
+  border:  "#dde1f0",
+  accent:  "#6c63ff",
+  green:   "#16a34a",
+  red:     "#dc2626",
+  yellow:  "#d97706",
+  text:    "#1e2340",
+  muted:   "#64748b",
+  teal:    "#0d9488",
+  pink:    "#db2777",
+  inputBg: "#f4f6fb",
+  shadow:  "rgba(99,102,241,.12)",
+};
