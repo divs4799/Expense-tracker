@@ -33,6 +33,36 @@ export function getSession() {
   return auth.currentUser;
 }
 
+export async function getUserProfile(uid) {
+  try {
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (userDoc.exists()) {
+      return userDoc.data();
+    } else {
+      // Auto-create on fetch if missing (e.g. if the user deleted the collection)
+      const user = auth.currentUser;
+      if (user && user.uid === uid) {
+        const avatarColor = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)];
+        const profile = {
+          uid: user.uid,
+          name: user.displayName || "",
+          email: (user.email || "").toLowerCase(),
+          avatar: null,
+          avatarColor,
+          familyIds: [],
+          activeFamilyId: null,
+          createdAt: serverTimestamp()
+        };
+        await setDoc(doc(db, "users", user.uid), profile);
+        return profile;
+      }
+    }
+  } catch (e) {
+    console.warn("Profile fetch failed:", e);
+  }
+  return null;
+}
+
 export async function loginUser(email, password) {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -43,6 +73,21 @@ export async function loginUser(email, password) {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         return { ok: true, user: { ...user, ...userDoc.data() } };
+      } else {
+        // Document missing (e.g., old account). Create one.
+        const avatarColor = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)];
+        const profile = {
+          uid: user.uid,
+          name: user.displayName || "",
+          email: user.email.toLowerCase(),
+          avatar: null,
+          avatarColor,
+          familyIds: [],
+          activeFamilyId: null,
+          createdAt: serverTimestamp()
+        };
+        await setDoc(doc(db, "users", user.uid), profile);
+        return { ok: true, user: { ...user, ...profile } };
       }
     } catch (e) {
       console.warn("Profile fetch failed, using basic auth info:", e);
@@ -88,13 +133,13 @@ export async function clearSession() {
 // ── User Management ─────────────────────────────────────────────────────────
 
 export async function updateUserName(user, newName) {
-  await updateDoc(doc(db, "users", user.uid), { name: newName });
+  await setDoc(doc(db, "users", user.uid), { name: newName }, { merge: true });
   await updateProfile(auth.currentUser, { displayName: newName });
   return { ...user, name: newName };
 }
 
 export async function updateUserAvatar(user, avatar, avatarColor) {
-  await updateDoc(doc(db, "users", user.uid), { avatar, avatarColor });
+  await setDoc(doc(db, "users", user.uid), { avatar, avatarColor }, { merge: true });
   return { ...user, avatar, avatarColor };
 }
 
@@ -102,7 +147,7 @@ export async function updateUserEmail(user, newEmail, password) {
   try {
     // Note: re-authentication might be required by Firebase for sensitive changes
     await updateEmail(auth.currentUser, newEmail);
-    await updateDoc(doc(db, "users", user.uid), { email: newEmail });
+    await setDoc(doc(db, "users", user.uid), { email: newEmail }, { merge: true });
     return { ok: true, user: { ...user, email: newEmail } };
   } catch (error) {
     return { ok: false, error: error.message };
@@ -120,7 +165,7 @@ export async function changePassword(user, oldPwd, newPwd) {
 
 /** Helper to patch the user state in Firestore and local state */
 export async function patchSession(user, updates) {
-  await updateDoc(doc(db, "users", user.uid), updates);
+  await setDoc(doc(db, "users", user.uid), updates, { merge: true });
   return { ...user, ...updates };
 }
 

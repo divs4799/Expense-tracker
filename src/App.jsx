@@ -5,7 +5,8 @@ import {
   KEYS, 
   saveData, 
   clearSession, 
-  subscribeToData 
+  subscribeToData,
+  getUserProfile
 } from "./storage/storage";
 import { monthKey } from "./utils/helpers";
 import { DEFAULT_CATEGORIES } from "./constants/categories";
@@ -64,12 +65,11 @@ export default function App() {
 
   // 1. Listen for Auth changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // We have a user, we'll let the Login/Register handlers 
-        // provide the initial profile data, or we could fetch it here.
-        // For simplicity, we'll keep the profile in the user state.
-        setUser(prev => prev || firebaseUser);
+        // Fetch the full profile so we don't lose custom fields like avatarColor on refresh
+        const profile = await getUserProfile(firebaseUser.uid);
+        setUser(prev => ({ ...firebaseUser, ...(profile || {}) }));
       } else {
         setUser(null);
       }
@@ -121,9 +121,32 @@ export default function App() {
 
   const addExpense = useCallback(async (exp) => {
     const mk          = monthKey(new Date(exp.date));
-    const newExpenses = { ...data.expenses, [mk]: [...(data.expenses[mk] || []), exp] };
+    const expWithUser = { ...exp, createdBy: user?.name || user?.email || "Unknown" };
+    const newExpenses = { ...data.expenses, [mk]: [...(data.expenses[mk] || []), expWithUser] };
     await saveData(ns, data.cats, newExpenses, data.monthlyBudgets);
     toast.success("Expense added!");
+  }, [user, ns, data.cats, data.expenses, data.monthlyBudgets]);
+
+  const editExpense = useCallback(async (oldExp, newExp) => {
+    const oldMk = monthKey(new Date(oldExp.date));
+    const newMk = monthKey(new Date(newExp.date));
+    let newExpenses = { ...data.expenses };
+
+    // Remove from old month array
+    newExpenses[oldMk] = (newExpenses[oldMk] || []).filter(e => e.id !== oldExp.id);
+    // Add to new month array
+    newExpenses[newMk] = [...(newExpenses[newMk] || []), newExp];
+
+    await saveData(ns, data.cats, newExpenses, data.monthlyBudgets);
+    toast.success("Expense updated!");
+  }, [ns, data.cats, data.expenses, data.monthlyBudgets]);
+
+  const deleteExpense = useCallback(async (exp) => {
+    const mk = monthKey(new Date(exp.date));
+    const newExpenses = { ...data.expenses };
+    newExpenses[mk] = (newExpenses[mk] || []).filter(e => e.id !== exp.id);
+    await saveData(ns, data.cats, newExpenses, data.monthlyBudgets);
+    toast.success("Expense deleted!");
   }, [ns, data.cats, data.expenses, data.monthlyBudgets]);
 
   const saveMonthlyBudget = useCallback(async (amount) => {
@@ -168,7 +191,7 @@ export default function App() {
 
       <div className="pt-3">
         {tab === "home"       && <Dashboard      cats={data.cats} expenses={data.expenses} monthlyBudgets={data.monthlyBudgets} onNav={setTab} onSetBudget={() => setSetBudgetOpen(true)} />}
-        {tab === "expenses"   && <ExpensesView   cats={data.cats} expenses={data.expenses} onAdd={() => setAddExpOpen(true)} />}
+        {tab === "expenses"   && <ExpensesView   cats={data.cats} expenses={data.expenses} onAdd={() => setAddExpOpen(true)} onEdit={editExpense} onDelete={deleteExpense} />}
         {tab === "charts"     && <ChartsView     cats={data.cats} expenses={data.expenses} />}
         {tab === "categories" && <CategoriesView cats={data.cats} expenses={data.expenses} onCatsChange={setCats} />}
         {tab === "profile"    && (

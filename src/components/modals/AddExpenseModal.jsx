@@ -4,23 +4,41 @@ import { Input } from "../ui/Input";
 import { Btn }   from "../ui/Btn";
 import { today, uid } from "../../utils/helpers";
 
-export function AddExpenseModal({ open, onClose, cats, onAdd }) {
+export function AddExpenseModal({ open, onClose, cats, onAdd, initialData }) {
   const [form, setForm] = useState({
     catId: cats[0]?.id || "", amount: "", note: "", date: today(),
   });
 
   useEffect(() => {
-    if (open) setForm((f) => ({ ...f, catId: cats[0]?.id || "", date: today() }));
-  }, [open, cats]);
+    if (open) {
+      if (initialData) {
+        setForm({
+          catId: initialData.catId,
+          amount: String(initialData.amount),
+          note: initialData.note || "",
+          date: initialData.date,
+        });
+      } else {
+        setForm({ catId: cats[0]?.id || "", amount: "", note: "", date: today() });
+      }
+    }
+  }, [open, cats, initialData]);
 
   const submit = () => {
     if (!form.catId || !form.amount) return;
-    onAdd({ id: uid(), catId: form.catId, amount: Number(form.amount), note: form.note, date: form.date });
+    onAdd({ 
+      id: initialData ? initialData.id : uid(), 
+      catId: form.catId, 
+      amount: Number(form.amount), 
+      note: form.note, 
+      date: form.date,
+      ...(initialData?.createdBy ? { createdBy: initialData.createdBy } : {})
+    });
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Expense">
+    <Modal open={open} onClose={onClose} title={initialData ? "Edit Expense" : "Add Expense"}>
       {/* Category picker */}
       <div className="mb-4">
         <label className="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal } from "../components/ui/Modal";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 import { Input } from "../components/ui/Input";
 import { Btn }   from "../components/ui/Btn";
 import { CAT_COLORS } from "../constants/categories";
@@ -11,6 +12,7 @@ export function CategoriesView({ cats, expenses, onCatsChange }) {
   const monthExp = expenses[mk] || [];
   const [showAdd, setShowAdd] = useState(false);
   const [editCat, setEditCat] = useState(null);
+  const [catToDelete, setCatToDelete] = useState(null);
   const [form, setForm]       = useState({ name: "", icon: "💰", budget: "", color: CAT_COLORS[0] });
 
   const openAdd = () => {
@@ -30,7 +32,8 @@ export function CategoriesView({ cats, expenses, onCatsChange }) {
     setShowAdd(false);
   };
   const del = (id) => {
-    if (window.confirm("Delete this category?")) onCatsChange(cats.filter((c) => c.id !== id));
+    onCatsChange(cats.filter((c) => c.id !== id));
+    setCatToDelete(null);
   };
 
   return (
@@ -66,7 +69,7 @@ export function CategoriesView({ cats, expenses, onCatsChange }) {
                   <Pencil size={14} />
                 </button>
                 <button
-                  onClick={() => del(cat.id)}
+                  onClick={() => setCatToDelete(cat.id)}
                   className="btn btn-error btn-xs btn-square btn-outline"
                 >
                   <Trash2 size={14} />
@@ -103,6 +106,14 @@ export function CategoriesView({ cats, expenses, onCatsChange }) {
 
         <Btn onClick={save}>{editCat ? "Save Changes" : "Add Category"}</Btn>
       </Modal>
+
+      <ConfirmModal
+        open={!!catToDelete}
+        onClose={() => setCatToDelete(null)}
+        onConfirm={() => del(catToDelete)}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? Expenses in this category might lose their label."
+      />
     </div>
   );
 }

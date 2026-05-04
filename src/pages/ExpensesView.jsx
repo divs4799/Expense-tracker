@@ -1,12 +1,32 @@
 import { useState } from "react";
 import { monthKey, fmtCur } from "../utils/helpers";
-import { Plus, Search, Inbox, Wallet } from "lucide-react";
+import { Plus, Search, Inbox, Wallet, Pencil, Trash2 } from "lucide-react";
+import { AddExpenseModal } from "../components/modals/AddExpenseModal";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 
-export function ExpensesView({ cats, expenses, onAdd }) {
+export function ExpensesView({ cats, expenses, onAdd, onEdit, onDelete }) {
   const mk       = monthKey();
   const monthExp = (expenses[mk] || []).slice().reverse();
-  const [filter, setFilter] = useState("all");
-  const filtered = filter === "all" ? monthExp : monthExp.filter((e) => e.catId === filter);
+  const [catFilter, setCatFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("all");
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
+
+  const getDaysDiff = (dateStr) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expDate = new Date(dateStr);
+    expDate.setHours(0, 0, 0, 0);
+    return Math.abs(today - expDate) / 86400000;
+  };
+
+  const filtered = monthExp.filter(
+    (e) => (catFilter === "all" || e.catId === catFilter) && (userFilter === "all" || e.createdBy === userFilter)
+  );
+
+  // Extract unique users from expenses
+  const users = Array.from(new Set(monthExp.map((e) => e.createdBy).filter(Boolean)));
+  const totalFiltered = filtered.reduce((sum, e) => sum + e.amount, 0);
 
   return (
     <div className="px-4 pb-28">
@@ -17,16 +37,36 @@ export function ExpensesView({ cats, expenses, onAdd }) {
         </button>
       </div>
 
+      {/* Filter Options & Total */}
+      <div className="flex justify-between items-center mb-3">
+        <div className="text-sm">
+          <span className="opacity-60">Total:</span>{" "}
+          <span className="font-extrabold text-primary">{fmtCur(totalFiltered)}</span>
+        </div>
+        {users.length > 0 && (
+          <select
+            className="select select-bordered select-xs w-auto bg-base-200"
+            value={userFilter}
+            onChange={(e) => setUserFilter(e.target.value)}
+          >
+            <option value="all">All Members</option>
+            {users.map((u) => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
       {/* Category filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
-        {[{ id: "all", name: "All", icon: <Search size={12} />, color: "var(--color-primary)" }, ...cats].map((c) => (
+        {[{ id: "all", name: "All Cats", icon: <Search size={12} />, color: "var(--color-primary)" }, ...cats].map((c) => (
           <button
             key={c.id}
-            onClick={() => setFilter(c.id)}
+            onClick={() => setCatFilter(c.id)}
             className="btn btn-xs rounded-full flex-shrink-0 border transition-all duration-200 gap-1.5"
             style={{
-              background:  filter === c.id ? (c.color || "var(--color-primary)") : "transparent",
-              color:       filter === c.id ? "#fff" : undefined,
+              background:  catFilter === c.id ? (c.color || "var(--color-primary)") : "transparent",
+              color:       catFilter === c.id ? "#fff" : undefined,
               borderColor: c.color || "var(--color-primary)",
             }}
           >
@@ -62,17 +102,52 @@ export function ExpensesView({ cats, expenses, onAdd }) {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm">{exp.note || cat?.name || "Expense"}</div>
                   <div className="text-xs text-base-content/50 mt-0.5">
-                    {exp.date} · {cat?.name}
+                    {exp.date} · {cat?.name} {exp.createdBy ? ` · By ${exp.createdBy}` : ""}
                   </div>
                 </div>
-                <div className="text-error font-extrabold text-[15px] flex-shrink-0">
-                  −{fmtCur(exp.amount)}
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <div className="text-error font-extrabold text-[15px]">
+                    −{fmtCur(exp.amount)}
+                  </div>
+                  {getDaysDiff(exp.date) <= 10 && (
+                    <div className="flex gap-1 mt-1">
+                      <button
+                        onClick={() => setEditingExpense(exp)}
+                        className="btn btn-ghost btn-xs btn-square opacity-50 hover:opacity-100"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setExpenseToDelete(exp)}
+                        className="btn btn-ghost btn-xs btn-square opacity-50 hover:opacity-100 text-error hover:bg-error/10"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           );
         })
       )}
+
+      {/* Edit Modal */}
+      <AddExpenseModal
+        open={!!editingExpense}
+        onClose={() => setEditingExpense(null)}
+        cats={cats}
+        initialData={editingExpense}
+        onAdd={(updated) => onEdit(editingExpense, updated)}
+      />
+
+      <ConfirmModal
+        open={!!expenseToDelete}
+        onClose={() => setExpenseToDelete(null)}
+        onConfirm={() => onDelete(expenseToDelete)}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+      />
     </div>
   );
 }

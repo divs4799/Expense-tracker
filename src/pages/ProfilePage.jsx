@@ -137,7 +137,8 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
   };
 
   const handleUpdateAvatar = async (color) => {
-    const updated = await updateUserAvatar(user, color);
+    const safeAvatar = typeof user.avatar === 'string' && user.avatar.startsWith('#') ? null : (user.avatar || null);
+    const updated = await updateUserAvatar(user, safeAvatar, color);
     onUserUpdate(updated);
     toast.success("Profile color updated!");
     setActiveForm(null);
@@ -194,13 +195,13 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
       >
         <div
           className="h-24 w-full opacity-80"
-          style={{ background: `linear-gradient(45deg, ${user.avatarColor}, var(--color-secondary))` }}
+          style={{ background: `linear-gradient(45deg, ${user.avatarColor || 'var(--color-primary)'}, var(--color-secondary))` }}
         />
         <div className="card-body -mt-12 items-center text-center p-5">
           <div className="avatar placeholder relative">
             <div
               className="w-20 h-20 rounded-full border-4 border-base-200 text-3xl font-extrabold text-white shadow-lg flex justify-center items-center"
-              style={{ backgroundColor: user.avatarColor }}
+              style={{ backgroundColor: user.avatarColor || 'var(--color-primary)' }}
             >
               {(user.name || user.email)[0].toUpperCase()}
             </div>
