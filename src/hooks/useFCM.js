@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { getToken, onMessage } from 'firebase/messaging';
 import { messaging } from '../storage/firebase';
 
-// NOTE: You must generate a Web Push certificate key pair (VAPID key)
-// from the Firebase Console -> Project Settings -> Cloud Messaging -> Web configuration
-const VAPID_KEY = "YOUR_VAPID_KEY_HERE";
+// Read VAPID key from environment variables to avoid exposing it on GitHub
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 export function useFCM() {
   const [fcmToken, setFcmToken] = useState(null);
