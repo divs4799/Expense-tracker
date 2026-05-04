@@ -86,9 +86,9 @@ export function LoginPage({ onLogin, onGoRegister }) {
             />
           </div>
 
-          <p className="text-xs text-base-content/40 -mt-1">
+          {/* <p className="text-xs text-base-content/40 -mt-1">
             Hint: password is <code className="bg-base-200 px-1 rounded">12345</code>
-          </p>
+          </p> */}
 
           <button
             type="submit"
