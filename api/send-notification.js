@@ -1,4 +1,4 @@
-const admin = require("firebase-admin");
+import admin from "firebase-admin";
 
 // Initialize Firebase Admin if it hasn't been already
 if (!admin.apps.length) {
