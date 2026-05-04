@@ -140,3 +140,23 @@ export async function updateNameInFamilies(user, newName) {
     }
   }
 }
+
+/** Get FCM tokens for all members in a family except the current user */
+export async function getFamilyTokens(familyId, currentUserEmail) {
+  const family = await getFamily(familyId);
+  if (!family) return [];
+  const tokens = [];
+  for (const member of family.members) {
+    if (member.email !== currentUserEmail) {
+      const q = query(collection(db, "users"), where("email", "==", member.email));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0].data();
+        if (userDoc.fcmToken) {
+          tokens.push(userDoc.fcmToken);
+        }
+      }
+    }
+  }
+  return tokens;
+}

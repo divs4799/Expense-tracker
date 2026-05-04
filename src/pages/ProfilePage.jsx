@@ -17,8 +17,10 @@ import {
   DoorOpen,
   DollarSign,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Bell
 } from "lucide-react";
+import { useFCM } from "../hooks/useFCM";
 import {
   getFamiliesByIds, createFamily, joinFamily,
   leaveFamily, switchActiveFamily, updateNameInFamilies
@@ -66,6 +68,8 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
   // ── Forms Visibility ──
   const [activeForm, setActiveForm] = useState(null); // 'avatar' | 'create' | 'join'
   const [activeAccordion, setActiveAccordion] = useState(null); // 'name' | 'email' | 'password'
+
+  const { permissionState, requestPermissionAndGetToken } = useFCM();
 
   // ── Form States ──
   const [nameInput, setNameInput] = useState(user.name || "");
@@ -407,6 +411,29 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
       {/* ── Account Management ── */}
       <Section title="Account Settings">
         <div className="flex flex-col gap-2">
+
+          {/* Notifications */}
+          <div className="card bg-base-200 border border-base-300 p-4 shadow-sm flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <Bell size={16} />
+              </div>
+              <div>
+                <div className="font-bold text-sm">Push Notifications</div>
+                <div className="text-[10px] opacity-50 uppercase tracking-wider">
+                  {permissionState === 'granted' ? 'Enabled' : 'Disabled'}
+                </div>
+              </div>
+            </div>
+            {permissionState !== 'granted' && (
+              <button 
+                onClick={requestPermissionAndGetToken} 
+                className="btn btn-sm btn-outline btn-primary"
+              >
+                Enable
+              </button>
+            )}
+          </div>
 
           {/* Avatar Color Picker */}
           {activeForm === 'avatar' && (

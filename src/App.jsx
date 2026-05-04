@@ -6,8 +6,11 @@ import {
   saveData, 
   clearSession, 
   subscribeToData,
-  getUserProfile
+  getUserProfile,
+  saveFcmToken
 } from "./storage/storage";
+import { getFamilyTokens } from "./storage/families";
+import { useFCM } from "./hooks/useFCM";
 import { monthKey } from "./utils/helpers";
 import { DEFAULT_CATEGORIES } from "./constants/categories";
 
@@ -62,6 +65,29 @@ export default function App() {
 
   // Namespace for data syncing
   const ns = user?.activeFamilyId || "personal";
+
+  const { fcmToken } = useFCM();
+
+  useEffect(() => {
+    if (user && fcmToken) {
+      saveFcmToken(user, fcmToken);
+    }
+  }, [user, fcmToken]);
+
+  const notifyFamily = async (title, body) => {
+    if (!user?.activeFamilyId) return;
+    const tokens = await getFamilyTokens(user.activeFamilyId, user.email);
+    if (tokens.length === 0) return;
+    try {
+      await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokens, title, body })
+      });
+    } catch (e) {
+      console.error("Failed to notify family", e);
+    }
+  };
 
   // 1. Listen for Auth changes
   useEffect(() => {
@@ -125,6 +151,32 @@ export default function App() {
     const newExpenses = { ...data.expenses, [mk]: [...(data.expenses[mk] || []), expWithUser] };
     await saveData(ns, data.cats, newExpenses, data.monthlyBudgets);
     toast.success("Expense added!");
+
+    // Notifications
+    const userName = user?.name || user?.email || "Someone";
+    notifyFamily("New Expense", `${userName} added a new expense for ₹${exp.amount}.`);
+
+    // Budget overrun checks
+    const mb = data.monthlyBudgets[mk] || 0;
+    if (mb > 0) {
+      const currentTotal = (data.expenses[mk] || []).reduce((sum, e) => sum + e.amount, 0);
+      const newTotal = currentTotal + exp.amount;
+      if (newTotal > mb && currentTotal <= mb) {
+        notifyFamily("Budget Exceeded!", `The monthly budget of ₹${mb} has been exceeded.`);
+      }
+    }
+
+    const cat = data.cats.find(c => c.id === exp.categoryId);
+    if (cat && cat.budget > 0) {
+      const currentCatTotal = (data.expenses[mk] || [])
+        .filter(e => e.categoryId === exp.categoryId)
+        .reduce((sum, e) => sum + e.amount, 0);
+      const newCatTotal = currentCatTotal + exp.amount;
+      if (newCatTotal > cat.budget && currentCatTotal <= cat.budget) {
+        notifyFamily("Category Budget Exceeded!", `The ${cat.name} budget has been exceeded.`);
+      }
+    }
+
   }, [user, ns, data.cats, data.expenses, data.monthlyBudgets]);
 
   const editExpense = useCallback(async (oldExp, newExp) => {

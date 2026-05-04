@@ -169,6 +169,13 @@ export async function patchSession(user, updates) {
   return { ...user, ...updates };
 }
 
+export async function saveFcmToken(user, token) {
+  if (!user || !token) return;
+  // Store the token in a "fcmTokens" array or overwrite "fcmToken"
+  await setDoc(doc(db, "users", user.uid), { fcmToken: token }, { merge: true });
+}
+
+
 // ── Data Persistence ────────────────────────────────────────────────────────
 
 /** 
