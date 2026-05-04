@@ -54,6 +54,11 @@ export default async function handler(req, res) {
         title: title,
         body: body,
       },
+      webpush: {
+        fcmOptions: {
+          link: "/", // Opens the app when the notification is clicked
+        }
+      },
       data: data || {}, // Optional custom data payload
       tokens: tokens,
     };

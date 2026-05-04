@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getToken, onMessage } from 'firebase/messaging';
 import { messaging } from '../storage/firebase';
 
+import { toast } from 'react-hot-toast';
+
 // Read VAPID key from environment variables to avoid exposing it on GitHub
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
@@ -41,7 +43,13 @@ export function useFCM() {
     // Foreground message listener
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Message received in foreground: ', payload);
-      // We could optionally show a toast here if we want an in-app alert too
+      // Show an in-app toast if the app is currently open!
+      const title = payload.notification?.title || 'New Notification';
+      const body = payload.notification?.body || '';
+      toast(`${title}\n${body}`, {
+        duration: 5000,
+        icon: '🔔',
+      });
     });
 
     return () => {
