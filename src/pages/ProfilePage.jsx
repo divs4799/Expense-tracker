@@ -15,7 +15,7 @@ import {
   X,
   Trash2,
   DoorOpen,
-  DollarSign,
+  IndianRupee,
   Layers,
   ChevronDown,
   Bell
@@ -235,7 +235,7 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
       {/* ── Quick Stats ── */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="card bg-base-200 border border-base-300 p-4 flex flex-row items-center gap-4">
-          <div className="p-2 bg-primary/10 rounded-xl text-primary"><DollarSign size={24} /></div>
+          <div className="p-2 bg-primary/10 rounded-xl text-primary"><IndianRupee size={24} /></div>
           <div>
             <div className="text-[10px] opacity-50 font-bold uppercase tracking-wider">Monthly Spend</div>
             <div className="text-lg font-black text-primary">{fmtCur(totalSpent)}</div>
