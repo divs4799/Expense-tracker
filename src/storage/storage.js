@@ -4,7 +4,8 @@ import {
   signOut, 
   updateProfile, 
   updateEmail, 
-  updatePassword 
+  updatePassword,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { 
   doc, 
@@ -128,6 +129,15 @@ export async function registerUser(name, email, password) {
 
 export async function clearSession() {
   await signOut(auth);
+}
+
+export async function resetPassword(email) {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
 }
 
 // ── User Management ─────────────────────────────────────────────────────────

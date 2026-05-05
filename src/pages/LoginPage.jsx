@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { loginUser } from "../storage/storage";
-import { Wallet, AlertCircle } from "lucide-react";
+import { loginUser, resetPassword } from "../storage/storage";
+import { Wallet, AlertCircle, CheckCircle } from "lucide-react";
 
 export function LoginPage({ onLogin, onGoRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const submit = (e) => {
     e.preventDefault();
@@ -23,6 +25,26 @@ export function LoginPage({ onLogin, onGoRegister }) {
       }
       setLoading(false);
     }, 600);
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setResetSuccess(false);
+    
+    if (!email) {
+      setError("Please enter your email address to reset password.");
+      return;
+    }
+
+    setLoading(true);
+    const result = await resetPassword(email);
+    if (result.ok) {
+      setResetSuccess(true);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
   return (
@@ -47,8 +69,12 @@ export function LoginPage({ onLogin, onGoRegister }) {
 
       {/* Form card */}
       <div className="flex-1 bg-base-100 rounded-t-3xl -mt-6 px-6 pt-8 pb-10 shadow-2xl relative z-10">
-        <h2 className="text-xl font-bold mb-1">Welcome back</h2>
-        <p className="text-base-content/50 text-sm mb-6">Sign in to your account</p>
+        <h2 className="text-xl font-bold mb-1">
+          {isResettingPassword ? "Reset Password" : "Welcome back"}
+        </h2>
+        <p className="text-base-content/50 text-sm mb-6">
+          {isResettingPassword ? "Enter your email to receive a reset link" : "Sign in to your account"}
+        </p>
 
         {error && (
           <div role="alert" className="alert alert-error mb-4 py-3 text-sm flex items-center gap-2">
@@ -57,45 +83,101 @@ export function LoginPage({ onLogin, onGoRegister }) {
           </div>
         )}
 
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              className="input input-bordered bg-base-200 w-full"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
+        {resetSuccess && (
+          <div role="alert" className="alert alert-success mb-4 py-3 text-sm flex items-center gap-2">
+            <CheckCircle size={18} />
+            <span>Password reset email sent. Please check your inbox.</span>
           </div>
+        )}
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              className="input input-bordered bg-base-200 w-full"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-          </div>
+        {!isResettingPassword ? (
+          <form onSubmit={submit} className="flex flex-col gap-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                className="input input-bordered bg-base-200 w-full"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
 
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-base-content/50">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  className="text-xs text-primary font-semibold hover:underline"
+                  onClick={() => {
+                    setIsResettingPassword(true);
+                    setError("");
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <input
+                type="password"
+                className="input input-bordered bg-base-200 w-full"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
 
-
-          <button
-            type="submit"
-            className="btn btn-primary w-full mt-2"
-            disabled={loading}
-          >
-            {loading ? <span className="loading loading-spinner loading-sm" /> : "Sign In"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="btn btn-primary w-full mt-2"
+              disabled={loading}
+            >
+              {loading ? <span className="loading loading-spinner loading-sm" /> : "Sign In"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleResetPassword} className="flex flex-col gap-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                className="input input-bordered bg-base-200 w-full"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
+            
+            <button
+              type="submit"
+              className="btn btn-primary w-full mt-2"
+              disabled={loading}
+            >
+              {loading ? <span className="loading loading-spinner loading-sm" /> : "Send Reset Link"}
+            </button>
+            
+            <button
+              type="button"
+              className="btn btn-ghost w-full mt-2 text-sm text-base-content/60"
+              onClick={() => {
+                setIsResettingPassword(false);
+                setError("");
+                setResetSuccess(false);
+              }}
+              disabled={loading}
+            >
+              Back to Login
+            </button>
+          </form>
+        )}
 
         <div className="divider text-xs text-base-content/30 my-6">OR</div>
 
