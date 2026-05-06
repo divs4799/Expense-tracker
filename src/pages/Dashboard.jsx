@@ -14,7 +14,7 @@ import {
   Plus
 } from "lucide-react";
 
-export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }) {
+export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget, loading }) {
   const mk             = monthKey();
   const monthExp       = expenses[mk] || [];
   const monthlyBudget  = monthlyBudgets[mk] || 0;
@@ -37,8 +37,61 @@ export function Dashboard({ cats, expenses, monthlyBudgets, onNav, onSetBudget }
     { label: "Days Left",  val: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate(), icon: <Hourglass className="text-accent" size={24} />,   cls: "text-accent"    },
   ];
 
+  if (loading) {
+    return (
+      <div className="px-4 pb-28 animate-pulse">
+        {/* Skeleton Hero */}
+        <div className="rounded-2xl p-5 mb-4 h-44 bg-base-300 relative overflow-hidden shadow-sm">
+          <div className="flex justify-between mb-8">
+            <div className="h-4 w-24 bg-base-content/10 rounded" />
+            <div className="h-6 w-20 bg-base-content/10 rounded" />
+          </div>
+          <div className="h-10 w-48 bg-base-content/10 rounded mb-4" />
+          <div className="h-2 w-full bg-base-content/10 rounded mb-2" />
+          <div className="flex justify-between">
+            <div className="h-3 w-20 bg-base-content/10 rounded" />
+            <div className="h-3 w-16 bg-base-content/10 rounded" />
+          </div>
+        </div>
+
+        {/* Skeleton Stats */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="card bg-base-200 border border-base-300 h-24 p-4 gap-2">
+              <div className="h-6 w-6 bg-base-content/10 rounded" />
+              <div className="h-6 w-16 bg-base-content/10 rounded" />
+              <div className="h-3 w-12 bg-base-content/10 rounded" />
+            </div>
+          ))}
+        </div>
+
+        {/* Skeleton Categories */}
+        <div className="flex justify-between mb-4">
+          <div className="h-5 w-24 bg-base-content/10 rounded" />
+          <div className="h-4 w-12 bg-base-content/10 rounded" />
+        </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="card bg-base-200 h-28 mb-3 p-4 gap-4 border border-base-300">
+            <div className="flex justify-between">
+              <div className="flex gap-2">
+                <div className="h-8 w-8 bg-base-content/10 rounded-lg" />
+                <div className="h-6 w-24 bg-base-content/10 rounded" />
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <div className="h-5 w-20 bg-base-content/10 rounded" />
+                <div className="h-3 w-24 bg-base-content/10 rounded" />
+              </div>
+            </div>
+            <div className="h-1.5 w-full bg-base-content/10 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 pb-28">
+      {/* ... existing content ... */}
 
       {/* ── Hero card ── */}
       <div

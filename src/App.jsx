@@ -62,6 +62,7 @@ export default function App() {
   const [tab,  setTab]                    = useState("home");
   const [addExpOpen,    setAddExpOpen]    = useState(false);
   const [setBudgetOpen, setSetBudgetOpen] = useState(false);
+  const [dataLoading,   setDataLoading]   = useState(true);
 
   // Namespace for data syncing
   const ns = user?.activeFamilyId || "personal";
@@ -107,8 +108,10 @@ export default function App() {
   // 2. Listen for Data changes (Real-time Sync)
   useEffect(() => {
     if (!user) return;
+    setDataLoading(true);
     const unsubscribe = subscribeToData(ns, (newData) => {
       setData(newData);
+      setDataLoading(false);
     });
     return () => unsubscribe();
   }, [user, ns]);
@@ -277,7 +280,7 @@ export default function App() {
       />
 
       <div className="pt-3">
-        {tab === "home"       && <Dashboard      cats={data.cats} expenses={data.expenses} monthlyBudgets={data.monthlyBudgets} onNav={setTab} onSetBudget={() => setSetBudgetOpen(true)} />}
+        {tab === "home"       && <Dashboard      loading={dataLoading} cats={data.cats} expenses={data.expenses} monthlyBudgets={data.monthlyBudgets} onNav={setTab} onSetBudget={() => setSetBudgetOpen(true)} />}
         {tab === "expenses"   && <ExpensesView   cats={data.cats} expenses={data.expenses} onAdd={() => setAddExpOpen(true)} onEdit={editExpense} onDelete={deleteExpense} />}
         {tab === "charts"     && <ChartsView     cats={data.cats} expenses={data.expenses} />}
         {tab === "categories" && <CategoriesView cats={data.cats} expenses={data.expenses} onCatsChange={setCats} />}

@@ -90,12 +90,15 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
   // ── Derived ──
   // ── Async State ──
   const [families, setFamilies] = useState([]);
+  const [famsLoading, setFamsLoading] = useState(true);
 
   // Fetch families when IDs change
   useEffect(() => {
     const fetchFams = async () => {
+      setFamsLoading(true);
       const res = await getFamiliesByIds(user.familyIds);
       setFamilies(res);
+      setFamsLoading(false);
     };
     fetchFams();
   }, [user.familyIds]);
@@ -253,48 +256,64 @@ export function ProfilePage({ user, onUserUpdate, onLogout, expenses, cats }) {
       {/* ── Multiple Families List ── */}
       <Section title="Your Family Groups">
         <div className="flex flex-col gap-2">
-          {/* Personal option */}
-          <div
-            className={`card flex-row items-center p-3 gap-3 border transition-all cursor-pointer ${user.activeFamilyId === null ? 'bg-primary/10 border-primary shadow-sm' : 'bg-base-200 border-base-300 hover:border-base-content/20'}`}
-            onClick={() => handleSwitch(null)}
-          >
-            <div className="w-10 h-10 rounded-xl bg-base-300 flex items-center justify-center text-primary/60"><User size={20} /></div>
-            <div className="flex-1">
-              <div className="font-bold text-sm">Personal Space</div>
-              <div className="text-[10px] opacity-50 font-bold uppercase">Private data</div>
-            </div>
-            {user.activeFamilyId === null && <div className="badge badge-primary badge-sm font-bold">Active</div>}
-          </div>
-
-          {/* Family list */}
-          {families.map(f => (
-            <div
-              key={f.id}
-              className={`card flex-row items-center p-3 gap-3 border transition-all cursor-pointer ${user.activeFamilyId === f.id ? 'bg-primary/10 border-primary shadow-sm' : 'bg-base-200 border-base-300 hover:border-base-content/20'}`}
-              onClick={() => handleSwitch(f.id)}
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center"><Home size={20} /></div>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm truncate">{f.name}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="text-[10px] opacity-50 font-bold uppercase">{f.members.length} Members</div>
-                  <div className="badge badge-xs badge-outline opacity-30 text-[9px]">{f.inviteCode}</div>
+          {famsLoading ? (
+            <>
+              {[1, 2].map(i => (
+                <div key={i} className="card flex-row items-center p-3 gap-3 border border-base-300 bg-base-200 animate-pulse">
+                  <div className="w-10 h-10 rounded-xl bg-base-content/10" />
+                  <div className="flex-1 gap-2 flex flex-col">
+                    <div className="h-4 w-24 bg-base-content/10 rounded" />
+                    <div className="h-3 w-16 bg-base-content/10 rounded" />
+                  </div>
                 </div>
+              ))}
+            </>
+          ) : (
+            <>
+              {/* Personal option */}
+              <div
+                className={`card flex-row items-center p-3 gap-3 border transition-all cursor-pointer ${user.activeFamilyId === null ? 'bg-primary/10 border-primary shadow-sm' : 'bg-base-200 border-base-300 hover:border-base-content/20'}`}
+                onClick={() => handleSwitch(null)}
+              >
+                <div className="w-10 h-10 rounded-xl bg-base-300 flex items-center justify-center text-primary/60"><User size={20} /></div>
+                <div className="flex-1">
+                  <div className="font-bold text-sm">Personal Space</div>
+                  <div className="text-[10px] opacity-50 font-bold uppercase">Private data</div>
+                </div>
+                {user.activeFamilyId === null && <div className="badge badge-primary badge-sm font-bold">Active</div>}
               </div>
-              <div className="flex flex-col items-end gap-1">
-                {user.activeFamilyId === f.id && <div className="badge badge-primary badge-sm font-bold">Active</div>}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmLeave({ id: f.id, name: f.name, isOwner: f.ownerEmail === user.email });
-                  }}
-                  className="btn btn-ghost btn-xs btn-square text-error/40 hover:text-error"
+
+              {/* Family list */}
+              {families.map(f => (
+                <div
+                  key={f.id}
+                  className={`card flex-row items-center p-3 gap-3 border transition-all cursor-pointer ${user.activeFamilyId === f.id ? 'bg-primary/10 border-primary shadow-sm' : 'bg-base-200 border-base-300 hover:border-base-content/20'}`}
+                  onClick={() => handleSwitch(f.id)}
                 >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center"><Home size={20} /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm truncate">{f.name}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="text-[10px] opacity-50 font-bold uppercase">{f.members.length} Members</div>
+                      <div className="badge badge-xs badge-outline opacity-30 text-[9px]">{f.inviteCode}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {user.activeFamilyId === f.id && <div className="badge badge-primary badge-sm font-bold">Active</div>}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmLeave({ id: f.id, name: f.name, isOwner: f.ownerEmail === user.email });
+                      }}
+                      className="btn btn-ghost btn-xs btn-square text-error/40 hover:text-error"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
 
           {/* Add/Join buttons */}
           <div className="grid grid-cols-2 gap-2 mt-2">
