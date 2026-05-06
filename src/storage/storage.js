@@ -182,8 +182,9 @@ export async function patchSession(user, updates) {
 
 export async function saveFcmToken(user, token) {
   if (!user || !token) return;
-  // Store the token in a "fcmTokens" array to support multiple devices
+  // Store both for backward compatibility and to support multiple devices
   await setDoc(doc(db, "users", user.uid), { 
+    fcmToken: token,
     fcmTokens: arrayUnion(token) 
   }, { merge: true });
 }

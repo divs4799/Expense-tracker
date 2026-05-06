@@ -150,26 +150,37 @@ export async function getFamilyTokens(familyId, currentUserEmail, currentFcmToke
   if (!family) return [];
   
   const tokens = [];
+  const lowerCurrentUserEmail = (currentUserEmail || "").toLowerCase();
+
   for (const member of family.members) {
-    const q = query(collection(db, "users"), where("email", "==", member.email));
+    if (!member.email) continue;
+    const lowerEmail = member.email.toLowerCase();
+
+    // If we don't have a specific device token to exclude, 
+    // we default to the old behavior of excluding the user's entire account
+    if (!currentFcmToken && lowerEmail === lowerCurrentUserEmail) continue;
+
+    const q = query(collection(db, "users"), where("email", "==", lowerEmail));
     const snapshot = await getDocs(q);
     
     if (!snapshot.empty) {
       const userDoc = snapshot.docs[0].data();
       
-      // Collect from the new array
+      // Collect from both the array and the single field
       if (userDoc.fcmTokens && Array.isArray(userDoc.fcmTokens)) {
         tokens.push(...userDoc.fcmTokens);
       } 
-      // Fallback for old single token
-      else if (userDoc.fcmToken) {
+      if (userDoc.fcmToken) {
         tokens.push(userDoc.fcmToken);
       }
     }
   }
 
-  // Deduplicate and filter out the current device's token
-  const uniqueTokens = [...new Set(tokens)];
+  // Deduplicate and filter out invalid tokens
+  const uniqueTokens = [...new Set(tokens.filter(t => t && typeof t === 'string' && t.trim() !== ''))];
+  
+  // Filter out the current device's token if provided. 
+  // If not provided, we already excluded the email above.
   return currentFcmToken 
     ? uniqueTokens.filter(t => t !== currentFcmToken)
     : uniqueTokens;
