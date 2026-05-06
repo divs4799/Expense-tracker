@@ -164,7 +164,7 @@ export default function App() {
       
       const result = await res.json();
       if (result.success) {
-        toast.success(`Success! Sent to ${result.successCount} devices.`, { id: tId });
+        toast.success(`Sent to ${result.successCount} of ${tokens.length} devices!`, { id: tId });
       } else {
         toast.error(`Failed: ${result.error || "Unknown error"}`, { id: tId });
       }
