@@ -17,7 +17,8 @@ import {
   where, 
   onSnapshot,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  arrayUnion
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { DEFAULT_CATEGORIES, CAT_COLORS } from "../constants/categories";
@@ -181,8 +182,10 @@ export async function patchSession(user, updates) {
 
 export async function saveFcmToken(user, token) {
   if (!user || !token) return;
-  // Store the token in a "fcmTokens" array or overwrite "fcmToken"
-  await setDoc(doc(db, "users", user.uid), { fcmToken: token }, { merge: true });
+  // Store the token in a "fcmTokens" array to support multiple devices
+  await setDoc(doc(db, "users", user.uid), { 
+    fcmTokens: arrayUnion(token) 
+  }, { merge: true });
 }
 
 

@@ -76,7 +76,7 @@ export default function App() {
 
   const notifyFamily = async (title, body) => {
     if (!user?.activeFamilyId) return;
-    const tokens = await getFamilyTokens(user.activeFamilyId, user.email);
+    const tokens = await getFamilyTokens(user.activeFamilyId, user.email, fcmToken);
     if (tokens.length === 0) return;
     try {
       await fetch('/api/send-notification', {

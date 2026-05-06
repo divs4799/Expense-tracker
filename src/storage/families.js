@@ -141,22 +141,36 @@ export async function updateNameInFamilies(user, newName) {
   }
 }
 
-/** Get FCM tokens for all members in a family except the current user */
-export async function getFamilyTokens(familyId, currentUserEmail) {
+/** Get FCM tokens for all members in a family. 
+ * If currentFcmToken is provided, it excludes only that specific token 
+ * (allowing notifications on other devices of the same user).
+ */
+export async function getFamilyTokens(familyId, currentUserEmail, currentFcmToken = null) {
   const family = await getFamily(familyId);
   if (!family) return [];
+  
   const tokens = [];
   for (const member of family.members) {
-    if (member.email !== currentUserEmail) {
-      const q = query(collection(db, "users"), where("email", "==", member.email));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const userDoc = snapshot.docs[0].data();
-        if (userDoc.fcmToken) {
-          tokens.push(userDoc.fcmToken);
-        }
+    const q = query(collection(db, "users"), where("email", "==", member.email));
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+      const userDoc = snapshot.docs[0].data();
+      
+      // Collect from the new array
+      if (userDoc.fcmTokens && Array.isArray(userDoc.fcmTokens)) {
+        tokens.push(...userDoc.fcmTokens);
+      } 
+      // Fallback for old single token
+      else if (userDoc.fcmToken) {
+        tokens.push(userDoc.fcmToken);
       }
     }
   }
-  return tokens;
+
+  // Deduplicate and filter out the current device's token
+  const uniqueTokens = [...new Set(tokens)];
+  return currentFcmToken 
+    ? uniqueTokens.filter(t => t !== currentFcmToken)
+    : uniqueTokens;
 }
