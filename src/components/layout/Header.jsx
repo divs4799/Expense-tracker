@@ -1,7 +1,7 @@
 import { ThemeSwitch } from "../ui/ThemeSwitch";
 import { LogOut, Plus } from "lucide-react";
 
-export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, user, onLogout }) {
+export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, onTestNotification, user, onLogout }) {
   const current = tabs.find((t) => t.id === tab);
   const initials = (user?.name || user?.email || "?")
     .split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -24,9 +24,14 @@ export function Header({ tab, tabs, dark, onToggleTheme, onAddExpense, user, onL
 
         {/* Hide add-expense button on the profile page */}
         {tab !== "profile" && (
-          <button onClick={onAddExpense} className="btn btn-primary btn-sm shadow-md gap-1">
-            <Plus size={16} /> Expense
-          </button>
+          <>
+            <button onClick={onTestNotification} className="btn btn-outline btn-xs gap-1 border-base-content/20 text-base-content/60 hover:text-base-content">
+              Test
+            </button>
+            <button onClick={onAddExpense} className="btn btn-primary btn-sm shadow-md gap-1">
+              <Plus size={16} /> Expense
+            </button>
+          </>
         )}
 
         {/* Avatar → dropdown with email + sign-out */}

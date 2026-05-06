@@ -139,6 +139,40 @@ export default function App() {
     setUser(updatedUser);
   };
 
+  const handleTestNotification = async () => {
+    if (!user?.activeFamilyId) {
+      toast.error("You are not in a family group.");
+      return;
+    }
+    const tId = toast.loading("Sending test notification...");
+    try {
+      const tokens = await getFamilyTokens(user.activeFamilyId, user.email, fcmToken);
+      if (tokens.length === 0) {
+        toast.error("No other devices found. Ensure family members have logged in and enabled notifications.", { id: tId });
+        return;
+      }
+      
+      const res = await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          tokens, 
+          title: "🔔 Test Notification", 
+          body: `Notification system check by ${user.name || user.email}` 
+        })
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        toast.success(`Success! Sent to ${result.successCount} devices.`, { id: tId });
+      } else {
+        toast.error(`Failed: ${result.error || "Unknown error"}`, { id: tId });
+      }
+    } catch (e) {
+      toast.error(`Error: ${e.message}`, { id: tId });
+    }
+  };
+
   // ── Data mutators (Now Async) ──────────────────────────────────────────────
   const setCats = useCallback(async (newCats) => {
     await saveData(ns, newCats, data.expenses, data.monthlyBudgets);
@@ -238,6 +272,7 @@ export default function App() {
         user={user}
         onToggleTheme={toggleTheme}
         onAddExpense={() => setAddExpOpen(true)}
+        onTestNotification={handleTestNotification}
         onLogout={handleLogout}
       />
 
